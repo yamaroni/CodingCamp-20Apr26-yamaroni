@@ -263,6 +263,195 @@ class GreetingDisplay {
   }
 }
 
+/**
+ * FocusTimer - Manages a 25-minute countdown timer
+ * 
+ * Provides a focus timer with start/stop/reset controls for time management.
+ * The timer counts down from 25 minutes (1500 seconds) and displays a completion
+ * indicator when reaching zero.
+ */
+class FocusTimer {
+  /**
+   * Create a FocusTimer instance
+   * @param {HTMLElement} containerElement - The DOM element to render into
+   */
+  constructor(containerElement) {
+    this.containerElement = containerElement;
+    this.totalSeconds = 1500; // 25 minutes in seconds
+    this.isRunning = false;
+    this.intervalId = null;
+  }
+
+  /**
+   * Initialize the timer
+   * Sets up the initial display and event listeners
+   */
+  init() {
+    // Render initial timer UI
+    this.renderTimerUI();
+    // Update display with initial time
+    this.updateDisplay();
+    // Set up event listeners
+    this.setupEventListeners();
+  }
+
+  /**
+   * Render the timer UI structure
+   */
+  renderTimerUI() {
+    this.containerElement.innerHTML = `
+      <div class="timer">
+        <div class="timer__display" id="timer-display">25:00</div>
+        <div class="timer__controls">
+          <button class="timer__button timer__button--start" id="timer-start">Start</button>
+          <button class="timer__button timer__button--stop" id="timer-stop">Stop</button>
+          <button class="timer__button timer__button--reset" id="timer-reset">Reset</button>
+        </div>
+        <div class="timer__completion" id="timer-completion" style="display: none;">
+          Timer Complete!
+        </div>
+      </div>
+    `;
+  }
+
+  /**
+   * Set up event listeners for timer controls
+   */
+  setupEventListeners() {
+    const startBtn = document.getElementById('timer-start');
+    const stopBtn = document.getElementById('timer-stop');
+    const resetBtn = document.getElementById('timer-reset');
+
+    startBtn.addEventListener('click', () => this.start());
+    stopBtn.addEventListener('click', () => this.stop());
+    resetBtn.addEventListener('click', () => this.reset());
+  }
+
+  /**
+   * Start the timer countdown
+   * Begins counting down from the current value if not already running
+   */
+  start() {
+    // Ignore if already running
+    if (this.isRunning) {
+      return;
+    }
+
+    // Don't start if timer is at zero
+    if (this.totalSeconds <= 0) {
+      return;
+    }
+
+    this.isRunning = true;
+
+    // Start the countdown interval
+    this.intervalId = setInterval(() => {
+      this.tick();
+    }, 1000);
+  }
+
+  /**
+   * Stop (pause) the timer countdown
+   * Preserves the current value for later resumption
+   */
+  stop() {
+    if (!this.isRunning) {
+      return;
+    }
+
+    this.isRunning = false;
+
+    // Clear the interval
+    if (this.intervalId !== null) {
+      clearInterval(this.intervalId);
+      this.intervalId = null;
+    }
+  }
+
+  /**
+   * Reset the timer to 25 minutes
+   * Stops the timer and returns to initial state
+   */
+  reset() {
+    // Stop the timer if running
+    this.stop();
+
+    // Reset to 1500 seconds (25 minutes)
+    this.totalSeconds = 1500;
+    this.isRunning = false;
+
+    // Hide completion indicator
+    const completionElement = document.getElementById('timer-completion');
+    if (completionElement) {
+      completionElement.style.display = 'none';
+    }
+
+    // Update the display
+    this.updateDisplay();
+  }
+
+  /**
+   * Tick method - decrements the timer and checks for completion
+   * Called every second when the timer is running
+   */
+  tick() {
+    // Decrement the counter
+    this.totalSeconds--;
+
+    // Prevent negative values
+    if (this.totalSeconds < 0) {
+      this.totalSeconds = 0;
+    }
+
+    // Update the display
+    this.updateDisplay();
+
+    // Check for completion
+    if (this.totalSeconds === 0) {
+      this.stop();
+      this.showCompletion();
+    }
+  }
+
+  /**
+   * Format seconds as MM:SS
+   * @param {number} seconds - Total seconds to format
+   * @returns {string} Time string in MM:SS format (e.g., "25:00", "03:45")
+   */
+  formatTime(seconds) {
+    const minutes = Math.floor(seconds / 60);
+    const remainingSeconds = seconds % 60;
+
+    // Pad with leading zeros
+    const minutesStr = minutes < 10 ? '0' + minutes : minutes;
+    const secondsStr = remainingSeconds < 10 ? '0' + remainingSeconds : remainingSeconds;
+
+    return `${minutesStr}:${secondsStr}`;
+  }
+
+  /**
+   * Update the timer display in the DOM
+   * Renders the current time in MM:SS format
+   */
+  updateDisplay() {
+    const displayElement = document.getElementById('timer-display');
+    if (displayElement) {
+      displayElement.textContent = this.formatTime(this.totalSeconds);
+    }
+  }
+
+  /**
+   * Show the completion indicator
+   * Displays a visual indicator when the timer reaches zero
+   */
+  showCompletion() {
+    const completionElement = document.getElementById('timer-completion');
+    if (completionElement) {
+      completionElement.style.display = 'block';
+    }
+  }
+}
+
 // Application initialization
 document.addEventListener('DOMContentLoaded', () => {
   // Initialize services
@@ -275,6 +464,12 @@ document.addEventListener('DOMContentLoaded', () => {
     timeService
   );
   greeting.init();
+  
+  // Initialize focus timer component
+  const timer = new FocusTimer(
+    document.getElementById('timer-section')
+  );
+  timer.init();
   
   console.log('Life Dashboard loaded');
 });
